@@ -37,6 +37,7 @@
 #include "math_utils.h"
 #include "midi.h"
 #include "mixer.h"
+#include "notifications.h"
 #include "pic.h"
 #include "setup.h"
 #include "shell.h"
@@ -501,9 +502,9 @@ static void configure_sb_filter_for_model(mixer_channel_t channel,
 	const auto filter_type = determine_filter_type(filter_choice, sb_type);
 
 	if (!filter_type) {
-		LOG_WARNING("%s: Invalid 'sb_filter' setting: '%s', using 'off'",
-		            sb_log_prefix(),
-		            filter_choice.c_str());
+		NOTIFY_WarningMsg(sb_log_prefix(),
+		                  "Invalid [color=light-green]'sb_filter'[reset] setting: [color=white]'%s'[reset], using [color=white]'off'[reset]",
+		                  filter_choice.c_str());
 
 		channel->SetHighPassFilter(FilterState::Off);
 		channel->SetLowPassFilter(FilterState::Off);
@@ -592,9 +593,9 @@ static void configure_opl_filter_for_model(mixer_channel_t opl_channel,
 
 	if (!filter_type) {
 		if (filter_choice != "off") {
-			LOG_WARNING("%s: Invalid 'opl_filter' setting: '%s', using 'off'",
-			            sb_log_prefix(),
-			            filter_choice.c_str());
+			NOTIFY_WarningMsg(sb_log_prefix(),
+			                  "Invalid 'opl_filter' setting: '%s', using 'off'",
+			                  filter_choice.c_str());
 		}
 
 		opl_channel->SetHighPassFilter(FilterState::Off);
@@ -2783,10 +2784,9 @@ static bool is_cms_enabled(const SBType sbtype)
 	const bool cms_enabled = [sect, sbtype]() {
 		// Backward compatibility with existing configurations
 		if (sect->Get_string("oplmode") == "cms") {
-			LOG_WARNING(
-			        "%s: The 'cms' setting for 'oplmode' is deprecated; "
-			        "use 'cms = on' instead.",
-			        sb_log_prefix());
+			NOTIFY_WarningMsg(sb_log_prefix(),
+			                  "The 'cms' setting for 'oplmode' is deprecated; "
+			                  "use 'cms = on' instead.");
 			return true;
 		} else {
 			const auto cms_str = sect->Get_string("cms");
@@ -2805,10 +2805,9 @@ static bool is_cms_enabled(const SBType sbtype)
 	case SBType::SB1: return cms_enabled;
 	case SBType::GameBlaster:
 		if (!cms_enabled) {
-			LOG_WARNING(
-			        "%s: 'cms' setting is 'off', but is forced to 'auto' "
-			        "on the Game Blaster.",
-			        sb_log_prefix());
+			NOTIFY_WarningMsg(sb_log_prefix(),
+			                  "'cms' setting is 'off', but is forced to 'auto' "
+			                  "on the Game Blaster.");
 			auto* sect_updater = static_cast<Section_prop*>(
 			        control->GetSection("sblaster"));
 			sect_updater->Get_prop("cms")->SetValue("auto");
@@ -2816,10 +2815,9 @@ static bool is_cms_enabled(const SBType sbtype)
 		return true; // Game Blaster is CMS
 	default:
 		if (cms_enabled) {
-			LOG_WARNING(
-			        "%s: 'cms' setting 'on' not supported on this card, "
-			        "forcing 'auto'.",
-			        sb_log_prefix());
+			NOTIFY_WarningMsg(sb_log_prefix(),
+			                  "'cms' setting 'on' not supported on this card, "
+			                  "forcing 'auto'.");
 
 			auto* sect_updater = static_cast<Section_prop*>(
 			        control->GetSection("sblaster"));

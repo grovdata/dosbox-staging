@@ -25,18 +25,20 @@
 
 /*!
  * \brief Convert marked up strings to strings with ANSI codes
- * 
- * \param str 
- * \return std::string 
+ *
+ * \param str
+ * \return std::string
  */
 std::string convert_ansi_markup(const char* str);
 
 /*!
  * \brief Convert marked up strings to strings with ANSI codes
- * 
- * \param str 
- * \return std::string 
+ *
+ * \param str
+ * \return std::string
  */
 std::string convert_ansi_markup(const std::string &str);
+
+std::string strip_ansi_markup(const char* str);
 
 #endif // DOSBOX_ANSI_CODE_MARKUP_H

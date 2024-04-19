@@ -368,3 +368,51 @@ std::string convert_ansi_markup(const char *str)
 	}
 	return result;
 }
+
+/*!
+ * \brief Convert ANSI markup tags in string to ANSI terminal codes
+ *
+ * Tags are in the form of [tagname]some text[/tagname]. Not all tags
+ * have closing counterparts, such as [reset], [color], [bgcolor], [erasel] and
+ * [erases].
+ *
+ * Color and erase tags take a required parameter in the form [color=value],
+ * [bgcolor=value], [erasel=value], [erases=value].
+ *
+ * Tag matching is case insensitive, and spacing is allowed between
+ * '[', ']' and '='.
+ *
+ * If a tag cannot be parsed for any reason, the resulting string will
+ * contain the original unparsed tag.
+ *
+ * Existing ANSI terminal codes are preserved in the output string.
+ *
+ * \param str string containing ANSI markup tags
+ * \return std::string
+ */
+std::string strip_ansi_markup(const char* str)
+{
+	std::string result;
+	const char* begin      = str;
+	const char* last_match = str;
+	std::cmatch m;
+
+	while (std::regex_search(begin, m, markup)) {
+		// Copy text before current match to output string
+		result += m.prefix().str();
+
+		// Continue the next iteration from the end of the current match
+		begin += m.position() + m.length();
+		last_match = m[0].second;
+	}
+
+	// Add the rest of the string after all matches have been found
+	result += last_match;
+
+	// And just in case our result is empty for some reason, set output
+	// string to input string
+	if (result.empty()) {
+		result = str;
+	}
+	return result;
+}

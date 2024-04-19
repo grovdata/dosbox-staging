@@ -313,22 +313,22 @@ std::string Property::GetHelp() const
 		result.append(help_text).append("\n");
 	}
 
-	const auto configitem_has_message = [this](const auto& value) {
-		return MSG_Exists(create_config_item_name(propname, value).c_str()) ||
-		       (iequals(value, propname) &&
+	const auto configitem_has_message = [this](const auto& val) {
+		return MSG_Exists(create_config_item_name(propname, val).c_str()) ||
+		       (iequals(val, propname) &&
 		        MSG_Exists(create_config_item_name(propname, {}).c_str()));
 	};
 	if (std::any_of(enabled_options.begin(),
 	                enabled_options.end(),
 	                configitem_has_message)) {
-		for (const auto& value : enabled_options) {
-			if (iequals(value, propname) &&
+		for (const auto& val : enabled_options) {
+			if (iequals(val, propname) &&
 			    MSG_Exists(create_config_item_name(propname, {}).c_str())) {
 				result.append(MSG_Get(
 				        create_config_item_name(propname, {}).c_str()));
 			} else {
 				result.append(MSG_Get(
-				        create_config_item_name(propname, value).c_str()));
+				        create_config_item_name(propname, val).c_str()));
 			}
 			result.append("\n");
 		}
@@ -353,22 +353,22 @@ std::string Property::GetHelpUtf8() const
 		result.append(help_text).append("\n");
 	}
 
-	const auto configitem_has_message = [this](const auto& value) {
-		return MSG_Exists(create_config_item_name(propname, value).c_str()) ||
-		       (iequals(value, propname) &&
+	const auto configitem_has_message = [this](const auto& val) {
+		return MSG_Exists(create_config_item_name(propname, val).c_str()) ||
+		       (iequals(val, propname) &&
 		        MSG_Exists(create_config_item_name(propname, {}).c_str()));
 	};
 	if (std::any_of(enabled_options.begin(),
 	                enabled_options.end(),
 	                configitem_has_message)) {
-		for (const auto& value : enabled_options) {
-			if (iequals(value, propname) &&
+		for (const auto& val : enabled_options) {
+			if (iequals(val, propname) &&
 			    MSG_Exists(create_config_item_name(propname, {}).c_str())) {
 				result.append(MSG_GetRaw(
 				        create_config_item_name(propname, {}).c_str()));
 			} else {
 				result.append(MSG_GetRaw(
-				        create_config_item_name(propname, value).c_str()));
+				        create_config_item_name(propname, val).c_str()));
 			}
 			result.append("\n");
 		}

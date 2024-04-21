@@ -69,8 +69,8 @@ private:
 	static constexpr float ms_per_pit_tick = 1000.0f / PIT_TICK_RATE;
 
 	// Mixer channel constants
-	static constexpr uint16_t sample_rate_hz     = 32000;
-	static constexpr uint16_t sample_rate_per_ms = sample_rate_hz / 1000;
+	static constexpr uint32_t sample_rate_hz     = 32000;
+	static constexpr uint32_t sample_rate_per_ms = sample_rate_hz / 1000;
 
 	static constexpr auto minimum_counter = 2 * PIT_TICK_RATE / sample_rate_hz;
 

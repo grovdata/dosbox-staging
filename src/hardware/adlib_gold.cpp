@@ -30,7 +30,7 @@ CHECK_NARROWING();
 // Yamaha YM7128B Surround Processor emulation
 // -------------------------------------------
 
-SurroundProcessor::SurroundProcessor(const uint16_t sample_rate_hz)
+SurroundProcessor::SurroundProcessor(const uint32_t sample_rate_hz)
 {
 	assert(sample_rate_hz >= 10);
 
@@ -104,7 +104,7 @@ AudioFrame SurroundProcessor::Process(const AudioFrame frame)
 // Philips Semiconductors TDA8425 hi-fi stereo audio processor emulation
 // ---------------------------------------------------------------------
 
-StereoProcessor::StereoProcessor(const uint16_t _sample_rate_hz)
+StereoProcessor::StereoProcessor(const uint32_t _sample_rate_hz)
         : sample_rate_hz(_sample_rate_hz)
 {
 	assert(sample_rate_hz > 0);
@@ -326,7 +326,7 @@ AudioFrame StereoProcessor::Process(const AudioFrame frame)
 // AdLib Gold module
 // -----------------
 
-AdlibGold::AdlibGold(const uint16_t sample_rate_hz)
+AdlibGold::AdlibGold(const uint32_t sample_rate_hz)
         : surround_processor(nullptr),
           stereo_processor(nullptr)
 {

@@ -110,7 +110,7 @@ struct ReverbSettings {
 	           const float density, const float bandwidth_freq_hz,
 	           const float decay, const float dampening_freq_hz,
 	           const float synth_level, const float digital_level,
-	           const float highpass_freq_hz, const uint16_t sample_rate_hz)
+	           const float highpass_freq_hz, const uint32_t sample_rate_hz)
 	{
 		synthesizer_send_level   = synth_level;
 		digital_audio_send_level = digital_level;
@@ -123,9 +123,12 @@ struct ReverbSettings {
 		mverb.setParameter(EmVerb::BANDWIDTHFREQ, bandwidth_freq_hz);
 		mverb.setParameter(EmVerb::DECAY, decay);
 		mverb.setParameter(EmVerb::DAMPINGFREQ, dampening_freq_hz);
-		mverb.setParameter(EmVerb::GAIN, 1.0f); // Always max gain (no
-		                                        // attenuation)
-		mverb.setParameter(EmVerb::MIX, 1.0f); // Always 100% wet signal
+
+		// Always max gain (no attenuation)
+		mverb.setParameter(EmVerb::GAIN, 1.0f);
+
+		// Always 100% wet signal
+		mverb.setParameter(EmVerb::MIX, 1.0f); 
 
 		mverb.setSampleRate(static_cast<float>(sample_rate_hz));
 
@@ -143,7 +146,7 @@ struct ChorusSettings {
 	float digital_audio_send_level = 0.0f;
 
 	void Setup(const float synth_level, const float digital_level,
-	           const uint16_t sample_rate_hz)
+	           const uint32_t sample_rate_hz)
 	{
 		synthesizer_send_level   = synth_level;
 		digital_audio_send_level = digital_level;
@@ -177,18 +180,24 @@ struct MixerSettings {
 	std::atomic<int> frames_needed     = 0;
 	std::atomic<int> min_frames_needed = 0;
 	std::atomic<int> max_frames_needed = 0;
-	std::atomic<int> tick_add = 0; // samples needed per millisecond tick
 
-	int tick_counter = 0;
-	std::atomic<uint16_t> sample_rate_hz = 0; // sample rate negotiated with SDL
-	uint16_t blocksize = 0; // matches SDL AudioSpec.samples type
+	// Samples needed per millisecond tick
+	std::atomic<int64_t> tick_add = 0;
 
-	uint16_t prebuffer_ms = 25; // user-adjustable in conf
+	int64_t tick_counter = 0;
+
+	// Sample rate negotiated with SDL
+	std::atomic<uint32_t> sample_rate_hz = 0;
+
+	// Matches SDL AudioSpec.samples type
+	uint16_t blocksize = 0;
+
+	uint16_t prebuffer_ms = 25;
 
 	SDL_AudioDeviceID sdldevice = 0;
 
-	MixerState state = MixerState::Uninitialized; // use set_mixer_state()
-	                                              // to change
+    // Use set_mixer_state() to change
+	MixerState state = MixerState::Uninitialized;
 
 	HighpassFilter highpass_filter = {};
 	Compressor compressor          = {};
@@ -238,7 +247,7 @@ uint16_t MIXER_GetPreBufferMs()
 	return mixer.prebuffer_ms;
 }
 
-uint16_t MIXER_GetSampleRate()
+uint32_t MIXER_GetSampleRate()
 {
 	const auto sample_rate_hz = mixer.sample_rate_hz.load();
 	assert(sample_rate_hz > 0);
@@ -644,7 +653,7 @@ void MIXER_DeregisterChannel(mixer_channel_t& channel_to_remove)
 }
 
 mixer_channel_t MIXER_AddChannel(MIXER_Handler handler,
-                                 const uint16_t sample_rate_hz, const char* name,
+                                 const uint32_t sample_rate_hz, const char* name,
                                  const std::set<ChannelFeature>& features)
 {
 	auto chan = std::make_shared<MixerChannel>(handler, name, features);
@@ -996,11 +1005,11 @@ void MixerChannel::ClearResampler()
 	}
 }
 
-void MixerChannel::SetSampleRate(const uint16_t new_sample_rate_hz)
+void MixerChannel::SetSampleRate(const uint32_t new_sample_rate_hz)
 {
 	// If the requested rate is zero, then avoid resampling by running the
 	// channel at the mixer's rate
-	const uint16_t target_rate_hz = new_sample_rate_hz
+	const uint32_t target_rate_hz = new_sample_rate_hz
 	                                      ? new_sample_rate_hz
 	                                      : mixer.sample_rate_hz.load();
 	assert(target_rate_hz > 0);
@@ -1034,9 +1043,9 @@ const std::string& MixerChannel::GetName() const
 	return name;
 }
 
-uint16_t MixerChannel::GetSampleRate() const
+uint32_t MixerChannel::GetSampleRate() const
 {
-	return check_cast<uint16_t>(sample_rate_hz);
+	return check_cast<uint32_t>(sample_rate_hz);
 }
 
 void MixerChannel::SetPeakAmplitude(const int peak)
@@ -1340,7 +1349,7 @@ bool MixerChannel::TryParseAndSetCustomFilter(const std::string& filter_prefs)
 	}
 }
 
-void MixerChannel::SetZeroOrderHoldUpsamplerTargetRate(const uint16_t target_rate_hz)
+void MixerChannel::SetZeroOrderHoldUpsamplerTargetRate(const uint32_t target_rate_hz)
 {
 	// TODO make sure that the ZOH target frequency cannot be set after the
 	// filter has been configured
@@ -2253,10 +2262,10 @@ static inline bool is_mixer_irq_important()
 	        CAPTURE_IsCapturingVideo());
 }
 
-static constexpr int calc_tickadd(const int freq)
+static constexpr int64_t calc_tickadd(const uint32_t freq)
 {
 	const auto freq64 = static_cast<int64_t>(freq);
-	return check_cast<int>((freq64 << TickShift) / 1000);
+	return check_cast<int64_t>((freq64 << TickShift) / 1000);
 }
 
 // Mix a certain amount of new sample frames
@@ -2819,7 +2828,7 @@ void MIXER_Init(Section* sec)
 	Section_prop* section = static_cast<Section_prop*>(sec);
 	assert(section);
 
-	mixer.sample_rate_hz = check_cast<uint16_t>(section->Get_int("rate"));
+	mixer.sample_rate_hz = check_cast<uint32_t>(section->Get_int("rate"));
 	mixer.blocksize = static_cast<uint16_t>(section->Get_int("blocksize"));
 
 	const auto configured_state = section->Get_bool("nosound")
@@ -2960,8 +2969,7 @@ void init_mixer_dosbox_settings(Section_prop& sec_prop)
 
 	auto int_prop = sec_prop.Add_int("rate", only_at_start, default_sample_rate_hz);
 	assert(int_prop);
-	int_prop->Set_values(
-	        {"8000", "11025", "16000", "22050", "32000", "44100", "48000"});
+	int_prop->SetMinMax(8000, 96000);
 	int_prop->Set_help("Mixer sample rate in Hz (%s by default).");
 
 	int_prop = sec_prop.Add_int("blocksize", only_at_start, default_blocksize);

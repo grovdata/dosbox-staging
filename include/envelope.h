@@ -68,7 +68,7 @@ public:
 
 	void Process(const bool is_stereo, AudioFrame& frame);
 
-	void Update(const int sample_rate_hz, const int peak_amplitude,
+	void Update(const int32_t sample_rate_hz, const int peak_amplitude,
 	            const uint8_t expansion_phase_ms,
 	            const uint8_t expire_after_seconds);
 

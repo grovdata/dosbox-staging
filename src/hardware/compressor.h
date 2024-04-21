@@ -79,7 +79,7 @@ public:
 	Compressor();
 	~Compressor();
 
-	void Configure(const uint16_t sample_rate_hz,
+	void Configure(const uint32_t sample_rate_hz,
 	               const float _0dbfs_sample_value, const float threshold_db,
 	               const float ratio, const float attack_time_ms,
 	               const float release_time_ms, const float rms_window_ms);
@@ -93,7 +93,7 @@ public:
 	Compressor &operator=(const Compressor &) = delete;
 
 private:
-	uint16_t sample_rate_hz = {};
+	uint32_t sample_rate_hz = {};
 	float scale_in          = {};
 	float scale_out         = {};
 

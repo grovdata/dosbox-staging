@@ -855,16 +855,19 @@ void MixerChannel::Enable(const bool should_enable)
 // Depending on the resampling method and the channel, mixer and ZoH upsampler
 // rates, the following scenarios are possible:
 //
-// LinearInterpolation
-// -------------------
-//   - Linear interpolation resampling only if
-//     channel_rate_hz != mixer_rate_hz
+// LerpUpsampleOrResample
+// ----------------------
+//   - Linear interpolation resampling only if:
+//         channel_rate_hz < mixer_rate_hz
+//
+//   - Speex resampling only if:
+//         channel_rate_hz > mixer_rate_hz
 //
 // ZeroOrderHoldAndResample
 // ------------------------
 //   - neither ZoH upsampling nor Speex resampling if:
 //         channel_rate_hz >= zoh_target_rate_hz AND
-//         channel_rate_hz _hz== mixer_rate_hz
+//         channel_rate_hz == mixer_rate_hz
 //
 //   - ZoH upsampling only if:
 //         channel_rate_hz < zoh_target_freq_hz AND
@@ -880,7 +883,8 @@ void MixerChannel::Enable(const bool should_enable)
 //
 // Resample
 // --------
-//   - Speex resampling only if channel_rate != mixer_rate
+//   - Speex resampling if:
+//         channel_rate_hz != mixer_rate_hz
 //
 void MixerChannel::ConfigureResampler()
 {
@@ -891,7 +895,7 @@ void MixerChannel::ConfigureResampler()
 	do_zoh_upsample = false;
 
 	switch (resample_method) {
-	case ResampleMethod::LinearInterpolation:
+	case ResampleMethod::LerpUpsampleOrResample:
 		do_resample = (channel_rate_hz != mixer_rate_hz);
 		if (do_resample) {
 			InitLerpUpsamplerState();
@@ -952,7 +956,7 @@ void MixerChannel::ConfigureResampler()
 void MixerChannel::ClearResampler()
 {
 	switch (resample_method) {
-	case ResampleMethod::LinearInterpolation:
+	case ResampleMethod::LerpUpsampleOrResample:
 		if (do_resample) {
 			InitLerpUpsamplerState();
 		}
@@ -1861,7 +1865,7 @@ void MixerChannel::AddSamples(const uint16_t frames, const Type* data)
 
 	if (do_resample) {
 		switch (resample_method) {
-		case ResampleMethod::LinearInterpolation: {
+		case ResampleMethod::LerpUpsampleOrResample: {
 			auto& s = lerp_upsampler;
 
 			auto in_pos = mixer.resample_temp.begin();

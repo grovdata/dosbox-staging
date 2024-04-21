@@ -135,10 +135,16 @@ struct MixerChannelSettings {
 };
 
 enum class ResampleMethod {
-	// Use simple linear interpolation to resample from the channel sample
+	// Use simple linear interpolation when upsampling from the channel sample
 	// rate to the mixer rate. This is the legacy behaviour, and it acts as a
 	// sort of a low-pass filter.
-	LinearInterpolation,
+	//
+	// If the channel rate is higher than the mixer rate, we'll do proper
+	// high-quality downsampling. This is possible when for example the host
+	// rate is 44,100 Hz but the Sound Blaster is running at its 45,454 Hz
+	// maximum rate, or when the host rate is 48,000 Hz and the OPL channel
+	// is operating at its native 49,716 Hz frequency.
+	LerpUpsampleOrResample,
 
 	// Upsample from the channel sample rate to the zero-order-hold target
 	// frequency first (this is basically the "nearest-neighbour" equivalent

@@ -542,7 +542,7 @@ static void configure_sb_filter_for_model(mixer_channel_t channel,
 
 	case FilterType::Modern:
 		// Linear interpolation upsampling is the legacy DOSBox behaviour
-		config.resample_method = ResampleMethod::LinearInterpolation;
+		config.resample_method = ResampleMethod::LerpUpsampleOrResample;
 		break;
 	}
 

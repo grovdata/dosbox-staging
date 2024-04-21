@@ -536,19 +536,19 @@ uint8_t Chip::Read()
 	return ret;
 }
 
-void OPL::Init(const uint16_t sample_rate)
+void OPL::Init(const uint32_t sample_rate_hz)
 {
 	newm = 0;
-	OPL3_Reset(&oplchip, sample_rate);
+	OPL3_Reset(&oplchip, sample_rate_hz);
 
-	ms_per_frame = millis_in_second / sample_rate;
+	ms_per_frame = millis_in_second / sample_rate_hz;
 
 	memset(cache, 0, ARRAY_LEN(cache));
 
 	switch (mode) {
 	case Mode::Opl3: break;
 	case Mode::Opl3Gold:
-		adlib_gold = std::make_unique<AdlibGold>(sample_rate);
+		adlib_gold = std::make_unique<AdlibGold>(sample_rate_hz);
 		break;
 	case Mode::Opl2: break;
 	case Mode::DualOpl2:
@@ -1065,7 +1065,7 @@ OPL::OPL(Section* configuration, const OplMode oplmode)
 		LOG_MSG("%s: DC bias removal enabled", channel->GetName().c_str());
 	}
 
-	Init(check_cast<uint16_t>(channel->GetSampleRate()));
+	Init(channel->GetSampleRate());
 
 	const auto read_from = std::bind(&OPL::PortRead, this, _1, _2);
 	const auto write_to  = std::bind(&OPL::PortWrite, this, _1, _2, _3);

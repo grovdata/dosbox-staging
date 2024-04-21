@@ -1224,11 +1224,11 @@ static void set_channel_rate_hz(const uint32_t requested_rate_hz)
 	//   41h Set digitized sound output sampling rate, DSP Commands 6-15
 	//   https://pdos.csail.mit.edu/6.828/2018/readings/hardware/SoundBlaster.pdf
 	//
-	constexpr int MinRateHz = 5000;
+	constexpr auto MinRateHz = 5000;
 
-	const auto rate_hz = std::clamp(static_cast<int>(requested_rate_hz),
-	                                MinRateHz,
-	                                NativeDacRateHz);
+	const uint32_t rate_hz = std::clamp(static_cast<int>(requested_rate_hz),
+	                                    MinRateHz,
+	                                    NativeDacRateHz);
 
 	assert(sb.chan);
 	if (sb.chan->GetSampleRate() != rate_hz) {

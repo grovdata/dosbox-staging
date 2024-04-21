@@ -34,7 +34,7 @@ void Envelope::Reactivate()
 	process = &Envelope::Apply;
 }
 
-void Envelope::Update(const int sample_rate_hz, const int peak_amplitude,
+void Envelope::Update(const int32_t sample_rate_hz, const int peak_amplitude,
                       const uint8_t expansion_phase_ms,
                       const uint8_t expire_after_seconds)
 {

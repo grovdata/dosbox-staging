@@ -184,7 +184,7 @@ public:
 	bool HasFeature(ChannelFeature feature) const;
 	std::set<ChannelFeature> GetFeatures() const;
 	const std::string& GetName() const;
-	uint16_t GetSampleRate() const;
+	uint32_t GetSampleRate() const;
 
 	void Set0dbScalar(const float f);
 	void RecalcCombinedVolume();
@@ -201,7 +201,7 @@ public:
 	StereoLine GetLineoutMap() const;
 
 	std::string DescribeLineout() const;
-	void SetSampleRate(const uint16_t sample_rate_hz);
+	void SetSampleRate(const uint32_t sample_rate_hz);
 	void SetPeakAmplitude(const int peak);
 	void Mix(const uint16_t frames_requested);
 
@@ -213,14 +213,19 @@ public:
 
 	void SetHighPassFilter(const FilterState state);
 	void SetLowPassFilter(const FilterState state);
-	void ConfigureHighPassFilter(const uint8_t order, const uint16_t cutoff_freq_hz);
-	void ConfigureLowPassFilter(const uint8_t order, const uint16_t cutoff_freq_hz);
+
+	void ConfigureHighPassFilter(const uint8_t order,
+	                             const uint16_t cutoff_freq_hz);
+
+	void ConfigureLowPassFilter(const uint8_t order,
+	                            const uint16_t cutoff_freq_hz);
+
 	bool TryParseAndSetCustomFilter(const std::string& filter_prefs);
 
 	bool ConfigureFadeOut(const std::string& fadeout_prefs);
 
 	void SetResampleMethod(const ResampleMethod method);
-	void SetZeroOrderHoldUpsamplerTargetRate(const uint16_t target_rate_hz);
+	void SetZeroOrderHoldUpsamplerTargetRate(const uint32_t target_rate_hz);
 
 	void SetCrossfeedStrength(const float strength);
 	float GetCrossfeedStrength() const;
@@ -304,7 +309,7 @@ private:
 	AudioFrame prev_frame = {};
 	AudioFrame next_frame = {};
 
-	int sample_rate_hz = 0u;
+	uint32_t sample_rate_hz = 0u;
 
 	// Volume scalars
 	// ~~~~~~~~~~~~~~
@@ -364,7 +369,7 @@ private:
 	} lerp_upsampler = {};
 
 	struct {
-		uint16_t target_rate_hz = 0;
+		uint32_t target_rate_hz = 0;
 		float pos               = 0.0f;
 		float step              = 0.0f;
 	} zoh_upsampler = {};
@@ -443,7 +448,7 @@ private:
 using mixer_channel_t = std::shared_ptr<MixerChannel>;
 
 mixer_channel_t MIXER_AddChannel(MIXER_Handler handler,
-                                 const uint16_t sample_rate_hz, const char* name,
+                                 const uint32_t sample_rate_hz, const char* name,
                                  const std::set<ChannelFeature>& features);
 
 mixer_channel_t MIXER_FindChannel(const char* name);
@@ -453,7 +458,7 @@ void MIXER_DeregisterChannel(mixer_channel_t& channel);
 
 // Mixer configuration and initialization
 void MIXER_AddConfigSection(const config_ptr_t& conf);
-uint16_t MIXER_GetSampleRate();
+uint32_t MIXER_GetSampleRate();
 uint16_t MIXER_GetPreBufferMs();
 
 const AudioFrame MIXER_GetMasterVolume();

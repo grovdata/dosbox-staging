@@ -291,7 +291,7 @@ private:
 	// Playback related
 	double last_rendered_ms = 0.0;
 	double ms_per_render    = 0.0;
-	uint16_t sample_rate_hz = 0;
+	uint32_t sample_rate_hz = 0;
 
 	uint8_t &adlib_command_reg = adlib_commandreg;
 

@@ -133,7 +133,7 @@ private:
 		bool wants_dc_bias_removed = false;
 	} ctrl = {};
 
-	void Init(const uint16_t sample_rate);
+	void Init(const uint32_t sample_rate_hz);
 
 	void AudioCallback(const uint16_t frames);
 	AudioFrame RenderFrame();

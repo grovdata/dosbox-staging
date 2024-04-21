@@ -83,7 +83,7 @@ constexpr auto MaxPrebufferMs = 100;
 template <class T, size_t ROWS, size_t COLS>
 using matrix = std::array<std::array<T, COLS>, ROWS>;
 
-using HighpassFilter = std::array<Iir::Butterworth::HighPass<2>, 2>;
+using HighPassFilter = std::array<Iir::Butterworth::HighPass<2>, 2>;
 
 using EmVerb = MVerb<float>;
 
@@ -99,7 +99,7 @@ struct ReverbSettings {
 	// the low-end response like other reverbs. So we're adding one
 	// here. This helps take control over low-frequency build-up,
 	// resulting in a more pleasant sound.
-	HighpassFilter highpass_filter = {};
+	HighPassFilter highpass_filter = {};
 
 	ReverbPreset preset            = ReverbPreset::None;
 	float synthesizer_send_level   = 0.0f;
@@ -190,7 +190,7 @@ struct MixerSettings {
 	MixerState state = MixerState::Uninitialized; // use set_mixer_state()
 	                                              // to change
 
-	HighpassFilter highpass_filter = {};
+	HighPassFilter highpass_filter = {};
 	Compressor compressor          = {};
 	bool do_compressor             = false;
 
@@ -1131,7 +1131,7 @@ static void log_filter_settings(const std::string& channel_name,
                                 const FilterState state, const uint8_t order,
                                 const uint16_t cutoff_freq_hz)
 {
-	// we programmatically expect only 'on' and 'forced-on' states:
+	// We programmatically expect only 'on' and 'forced-on' states
 	assert(state != FilterState::Off);
 	assert(state == FilterState::On || state == FilterState::ForcedOn);
 
@@ -1151,7 +1151,7 @@ void MixerChannel::SetHighPassFilter(const FilterState state)
 
 	if (do_highpass_filter) {
 		log_filter_settings(name,
-		                    "Highpass",
+		                    "High-pass",
 		                    state,
 		                    filters.highpass.order,
 		                    filters.highpass.cutoff_freq_hz);
@@ -1164,7 +1164,7 @@ void MixerChannel::SetLowPassFilter(const FilterState state)
 
 	if (do_lowpass_filter) {
 		log_filter_settings(name,
-		                    "Lowpass",
+		                    "Low-pass",
 		                    state,
 		                    filters.lowpass.order,
 		                    filters.lowpass.cutoff_freq_hz);
@@ -1223,52 +1223,63 @@ bool MixerChannel::TryParseAndSetCustomFilter(const std::string& filter_prefs)
 	auto set_filter = [&](const std::string& type_pref,
 	                      const std::string& order_pref,
 	                      const std::string& cutoff_freq_pref) {
+		const auto filter_name = (type_pref == "lpf") ? "low-pass"
+		                                              : "high-pass";
+
 		int order;
 		if (!sscanf(order_pref.c_str(), "%d", &order) || order < 1 ||
 		    order > max_filter_order) {
-			LOG_WARNING("%s: Invalid custom filter order: '%s'. Must be an integer between 1 and %d.",
-			            name.c_str(),
-			            order_pref.c_str(),
-			            max_filter_order);
+			LOG_WARNING(
+			        "%s: Invalid custom %s filter order: '%s'. "
+			        "Must be an integer between 1 and %d.",
+			        name.c_str(),
+					filter_name,
+			        order_pref.c_str(),
+			        max_filter_order);
 			return false;
 		}
 
 		uint16_t cutoff_freq_hz;
 		if (!sscanf(cutoff_freq_pref.c_str(), "%" SCNu16, &cutoff_freq_hz) ||
 		    cutoff_freq_hz <= 0) {
-			LOG_WARNING("%s: Invalid custom filter cutoff frequency: '%s'. Must be a positive number.",
-			            name.c_str(),
-			            cutoff_freq_pref.c_str());
+			LOG_WARNING(
+			        "%s: Invalid custom %s filter cutoff frequency: '%s'. "
+			        "Must be a positive number.",
+			        name.c_str(),
+					filter_name,
+			        cutoff_freq_pref.c_str());
 			return false;
 		}
 
-		const uint16_t max_cutoff_freq_hz = check_cast<uint16_t>(
-		        (do_zoh_upsample ? zoh_upsampler.target_rate_hz : sample_rate_hz) / 2 - 1);
+		const auto max_cutoff_freq_hz = check_cast<uint16_t>(
+		        mixer.sample_rate_hz / 2 - 1);
 
 		if (cutoff_freq_hz > max_cutoff_freq_hz) {
-			LOG_WARNING("%s: Invalid custom filter cutoff frequency: '%s'. "
-			            "Must be lower than half the sample rate; clamping to %d Hz.",
-			            name.c_str(),
-			            cutoff_freq_pref.c_str(),
-			            max_cutoff_freq_hz);
+			LOG_WARNING(
+			        "%s: Invalid custom %s filter cutoff frequency: '%s'. "
+			        "Must be lower than half the sample rate; clamping to %d Hz.",
+			        name.c_str(),
+					filter_name,
+			        cutoff_freq_pref.c_str(),
+			        max_cutoff_freq_hz);
 
 			cutoff_freq_hz = max_cutoff_freq_hz;
 		}
 
 		if (type_pref == "lpf") {
-			ConfigureLowPassFilter(check_cast<uint8_t>(order),
-			                       cutoff_freq_hz);
+			ConfigureLowPassFilter(check_cast<uint8_t>(order), cutoff_freq_hz);
 			SetLowPassFilter(FilterState::On);
 
 		} else if (type_pref == "hpf") {
-			ConfigureHighPassFilter(check_cast<uint8_t>(order),
-			                        cutoff_freq_hz);
+			ConfigureHighPassFilter(check_cast<uint8_t>(order), cutoff_freq_hz);
 			SetHighPassFilter(FilterState::On);
 
 		} else {
-			LOG_WARNING("%s: Invalid custom filter type: '%s'. Must be either 'hpf' or 'lpf'.",
-			            name.c_str(),
-			            type_pref.c_str());
+			LOG_WARNING(
+			        "%s: Invalid custom filter type: '%s'. "
+			        "Must be either 'hpf' or 'lpf'.",
+			        name.c_str(),
+			        type_pref.c_str());
 			return false;
 		}
 		return true;

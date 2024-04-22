@@ -128,7 +128,7 @@ struct ReverbSettings {
 		mverb.setParameter(EmVerb::GAIN, 1.0f);
 
 		// Always 100% wet signal
-		mverb.setParameter(EmVerb::MIX, 1.0f); 
+		mverb.setParameter(EmVerb::MIX, 1.0f);
 
 		mverb.setSampleRate(static_cast<float>(sample_rate_hz));
 
@@ -182,9 +182,9 @@ struct MixerSettings {
 	std::atomic<int> max_frames_needed = 0;
 
 	// Samples needed per millisecond tick
-	std::atomic<int64_t> tick_add = 0;
+	std::atomic<int> tick_add = 0;
 
-	int64_t tick_counter = 0;
+	int tick_counter = 0;
 
 	// Sample rate negotiated with SDL
 	std::atomic<uint32_t> sample_rate_hz = 0;
@@ -2262,10 +2262,10 @@ static inline bool is_mixer_irq_important()
 	        CAPTURE_IsCapturingVideo());
 }
 
-static constexpr int64_t calc_tickadd(const uint32_t freq)
+static constexpr int calc_tickadd(const uint32_t freq)
 {
 	const auto freq64 = static_cast<int64_t>(freq);
-	return check_cast<int64_t>((freq64 << TickShift) / 1000);
+	return check_cast<int>((freq64 << TickShift) / 1000);
 }
 
 // Mix a certain amount of new sample frames

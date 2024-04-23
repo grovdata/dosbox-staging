@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2002-2022  The DOSBox Team
+ *  Copyright (C) 2002-2024  The DOSBox Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -41,7 +41,7 @@ enum { HwOpl2 = 0, HwDualOpl2 = 1, HwOpl3 = 2 };
 
 static std::unique_ptr<OPL> opl = {};
 
-Timer::Timer(int16_t micros)
+Timer::Timer(const int micros)
         : clock_interval(micros * 0.001) // interval in milliseconds
 {
 	SetCounter(0);
@@ -177,8 +177,8 @@ public:
 			}
 
 			// Check how much time has passed
-			uint32_t passed = PIC_Ticks - lastTicks;
-			lastTicks       = PIC_Ticks;
+			auto passed = PIC_Ticks - lastTicks;
+			lastTicks   = PIC_Ticks;
 			header.milliseconds += passed;
 
 			// if ( passed > 0 ) LOG_MSG( "Delay %d", passed ) ;
@@ -284,15 +284,15 @@ private:
 	FILE* handle = nullptr;
 
 	// Start used to check total raw length on end
-	uint32_t startTicks = 0;
+	int startTicks = 0;
 
 	// Last ticks when last last cmd was added
-	uint32_t lastTicks = 0;
+	int lastTicks = 0;
 
 	// 16 added for delay commands and what not
 	uint8_t buf[1024];
 
-	uint32_t bufUsed = 0;
+	int bufUsed = 0;
 
 	RegisterCache* cache;
 
@@ -380,7 +380,7 @@ private:
 	{
 		buf[bufUsed++] = raw;
 		buf[bufUsed++] = val;
-		if (bufUsed >= sizeof(buf)) {
+		if (bufUsed >= check_cast<int>(sizeof(buf))) {
 			ClearBuf();
 		}
 	}
@@ -419,7 +419,7 @@ private:
 	void WriteCache()
 	{
 		// Check the registers to add
-		for (uint16_t i = 0; i < 256; ++i) {
+		for (auto i = 0; i < 256; ++i) {
 			auto val = (*cache)[i];
 
 			// Silence the note on entries
@@ -536,7 +536,7 @@ uint8_t Chip::Read()
 	return ret;
 }
 
-void OPL::Init(const uint16_t sample_rate)
+void OPL::Init(const int sample_rate)
 {
 	newm = 0;
 	OPL3_Reset(&oplchip, sample_rate);
@@ -582,11 +582,12 @@ int16_t remove_dc_bias(const int16_t back_sample)
 {
 	// Calculate the number of samples we need average across to maintain
 	// the lowest frequency given an assumed playback rate.
-	constexpr int16_t PcmPlaybackRateHz      = 16000;
-	constexpr int16_t LowestFreqToMaintainHz = 200;
-	constexpr int16_t NumToAverage = PcmPlaybackRateHz / LowestFreqToMaintainHz;
+	constexpr auto PcmPlaybackRateHz      = 16000;
+	constexpr auto LowestFreqToMaintainHz = 200;
+	constexpr auto NumToAverage = PcmPlaybackRateHz / LowestFreqToMaintainHz;
 
-	static int32_t sum                 = 0;
+	static int sum = 0;
+
 	static std::queue<int16_t> samples = {};
 
 	// Clear the queue if the stream isn't biased
@@ -650,7 +651,7 @@ void OPL::RenderUpToNow()
 	}
 }
 
-void OPL::AudioCallback(const uint16_t requested_frames)
+void OPL::AudioCallback(const int requested_frames)
 {
 	assert(channel);
 
@@ -1067,7 +1068,7 @@ OPL::OPL(Section* configuration, const OplMode oplmode)
 		LOG_MSG("%s: DC bias removal enabled", channel->GetName().c_str());
 	}
 
-	Init(check_cast<uint16_t>(channel->GetSampleRate()));
+	Init(channel->GetSampleRate());
 
 	const auto read_from = std::bind(&OPL::PortRead, this, _1, _2);
 	const auto write_to  = std::bind(&OPL::PortWrite, this, _1, _2, _3);

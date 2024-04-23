@@ -36,7 +36,7 @@
 
 class Timer {
 public:
-	Timer(int16_t micros);
+	Timer(const int micros);
 
 	bool Update(const double time);
 	void Reset();
@@ -133,9 +133,9 @@ private:
 		bool wants_dc_bias_removed = false;
 	} ctrl = {};
 
-	void Init(const uint16_t sample_rate);
+	void Init(const int sample_rate);
 
-	void AudioCallback(const uint16_t frames);
+	void AudioCallback(const int frames);
 	AudioFrame RenderFrame();
 	void RenderUpToNow();
 

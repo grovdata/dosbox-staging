@@ -1084,11 +1084,14 @@ void MixerChannel::AddSilence()
 	if (frames_done < frames_needed) {
 		if (prev_frame.left == 0.0f && prev_frame.right == 0.0f) {
 			frames_done = frames_needed;
+
 			// Make sure the next samples are zero when they get
 			// switched to prev
 			next_frame = {0.0f, 0.0f};
+
 			// This should trigger an instant request for new samples
 			freq_counter = FreqNext;
+
 		} else {
 			bool stereo = last_samples_were_stereo;
 
@@ -1133,6 +1136,7 @@ void MixerChannel::AddSilence()
 			}
 		}
 	}
+
 	last_samples_were_silence = true;
 
 	MIXER_UnlockAudioDevice();
@@ -2353,10 +2357,12 @@ static void mix_samples(const int frames_requested)
 		auto pos = start_pos;
 
 		for (auto i = 0; i < frames_added; ++i) {
-			for (auto ch = 0; ch < 2; ++ch) {
-				mixer.work[pos][ch] = mixer.highpass_filter[ch].filter(
-				        mixer.work[pos][ch]);
-			}
+			mixer.work[pos].left = mixer.highpass_filter[0].filter(
+			        mixer.work[pos].left);
+
+			mixer.work[pos].right = mixer.highpass_filter[1].filter(
+			        mixer.work[pos].right);
+
 			pos = (pos + 1) & MixerBufferMask;
 		}
 	}

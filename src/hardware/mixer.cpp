@@ -1195,7 +1195,7 @@ void MixerChannel::ConfigureHighPassFilter(const int order, const int _cutoff_fr
 {
 	const auto cutoff_freq_hz = clamp_filter_cutoff_freq(name, _cutoff_freq_hz);
 
-	assert(order > 0 && order <= max_filter_order);
+	assert(order > 0 && order <= MaxFilterOrder);
 	for (auto& f : filters.highpass.hpf) {
 		f.setup(order, mixer.sample_rate_hz, cutoff_freq_hz);
 	}
@@ -1208,7 +1208,7 @@ void MixerChannel::ConfigureLowPassFilter(const int order, const int _cutoff_fre
 {
 	const auto cutoff_freq_hz = clamp_filter_cutoff_freq(name, _cutoff_freq_hz);
 
-	assert(order > 0 && order <= max_filter_order);
+	assert(order > 0 && order <= MaxFilterOrder);
 	for (auto& f : filters.lowpass.lpf) {
 		f.setup(order, mixer.sample_rate_hz, cutoff_freq_hz);
 	}
@@ -1251,14 +1251,14 @@ bool MixerChannel::TryParseAndSetCustomFilter(const std::string& filter_prefs)
 
 		int order;
 		if (!sscanf(order_pref.c_str(), "%d", &order) || order < 1 ||
-		    order > max_filter_order) {
+		    order > MaxFilterOrder) {
 			LOG_WARNING(
 			        "%s: Invalid custom %s filter order: '%s'. "
 			        "Must be an integer between 1 and %d.",
 			        name.c_str(),
 			        filter_name,
 			        order_pref.c_str(),
-			        max_filter_order);
+			        MaxFilterOrder);
 			return false;
 		}
 
@@ -1747,7 +1747,7 @@ bool MixerChannel::Sleeper::ConfigureFadeOut(const std::string& prefs)
 	}
 	// Enable fade-out with defaults
 	if (has_true(prefs)) {
-		set_wait_and_fade(default_wait_ms, default_wait_ms);
+		set_wait_and_fade(DefaultWaitMs, DefaultWaitMs);
 		wants_fadeout = true;
 		return true;
 	}
@@ -1761,8 +1761,8 @@ bool MixerChannel::Sleeper::ConfigureFadeOut(const std::string& prefs)
 		const auto wait_ms = parse_int(prefs_vec[0]);
 		const auto fade_ms = parse_int(prefs_vec[1]);
 		if (wait_ms && fade_ms) {
-			const auto wait_is_valid = (*wait_ms >= min_wait_ms &&
-			                            *wait_ms <= max_wait_ms);
+			const auto wait_is_valid = (*wait_ms >= MinWaitMs &&
+			                            *wait_ms <= MaxWaitMs);
 
 			const auto fade_is_valid = (*fade_ms >= min_fade_ms &&
 			                            *fade_ms <= max_fade_ms);
@@ -1782,8 +1782,8 @@ bool MixerChannel::Sleeper::ConfigureFadeOut(const std::string& prefs)
 	        "%d (in milliseconds); using 'off'.",
 	        channel.GetName().c_str(),
 	        prefs.c_str(),
-	        min_wait_ms,
-	        max_wait_ms,
+	        MinWaitMs,
+	        MaxWaitMs,
 	        min_fade_ms,
 	        max_fade_ms);
 
@@ -1809,8 +1809,8 @@ MixerChannel::Sleeper::Sleeper(MixerChannel& c, const int sleep_after_ms)
           fadeout_or_sleep_after_ms(sleep_after_ms)
 {
 	// The constructed sleep period is programmatically controlled (so assert)
-	assert(fadeout_or_sleep_after_ms >= min_wait_ms);
-	assert(fadeout_or_sleep_after_ms <= max_wait_ms);
+	assert(fadeout_or_sleep_after_ms >= MinWaitMs);
+	assert(fadeout_or_sleep_after_ms <= MaxWaitMs);
 }
 
 // Either fades the frame or checks if the channel had any signal output.

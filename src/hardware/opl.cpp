@@ -541,7 +541,7 @@ void OPL::Init(const int sample_rate)
 	newm = 0;
 	OPL3_Reset(&oplchip, sample_rate);
 
-	ms_per_frame = millis_in_second / sample_rate;
+	ms_per_frame = MillisInSecond / sample_rate;
 
 	memset(cache, 0, ARRAY_LEN(cache));
 
@@ -1043,7 +1043,7 @@ OPL::OPL(Section* configuration, const OplMode oplmode)
 
 	// Register the audio channel
 	channel = MIXER_AddChannel(mixer_callback,
-	                           use_mixer_rate,
+	                           UseMixerRate,
 	                           ChannelName::Opl,
 	                           channel_features);
 

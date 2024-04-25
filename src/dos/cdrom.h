@@ -109,10 +109,12 @@ public:
 	virtual bool PauseAudio         (bool resume) = 0;
 	virtual bool StopAudio          () = 0;
 	virtual void ChannelControl     (TCtrl ctrl) = 0;
+	virtual bool ReadSector         (uint8_t* buffer, const bool raw, const uint32_t sector) = 0;
 	virtual bool ReadSectors        (PhysPt buffer, const bool raw, const uint32_t sector, const uint16_t num) = 0;
 	virtual bool ReadSectorsHost    (void* buffer, bool raw, unsigned long sector, unsigned long num) = 0;
 	virtual bool LoadUnloadMedia    (bool unload) = 0;
 	virtual void InitNewMedia       () {}
+	virtual bool HasDataTrack       () const = 0;
 	virtual bool HasFullMscdexSupport() = 0;
 
 protected:
@@ -155,6 +157,11 @@ public:
 
 	void ChannelControl([[maybe_unused]] TCtrl ctrl) override {}
 
+	bool ReadSector(uint8_t* /*buffer*/, const bool /*raw*/,
+	                const uint32_t /*sector*/) override
+	{
+		return true;
+	}
 	bool ReadSectors(PhysPt /*buffer*/, const bool /*raw*/,
 	                 const uint32_t /*sector*/, const uint16_t /*num*/) override
 	{
@@ -167,6 +174,10 @@ public:
 		return true;
 	}
 	bool LoadUnloadMedia(bool /*unload*/) override
+	{
+		return true;
+	}
+	bool HasDataTrack() const override
 	{
 		return true;
 	}
@@ -302,8 +313,8 @@ public:
 	bool ReadSectorsHost(void* buffer, bool raw, unsigned long sector,
 	                     unsigned long num) override;
 	bool LoadUnloadMedia(bool unload) override;
-	bool ReadSector(uint8_t* buffer, const bool raw, const uint32_t sector);
-	bool HasDataTrack();
+	bool ReadSector(uint8_t* buffer, const bool raw, const uint32_t sector) override;
+	bool HasDataTrack() const override;
 	bool HasFullMscdexSupport() override
 	{
 		return true;
@@ -394,11 +405,13 @@ public:
 	                 unsigned char& index, TMSF& relPos, TMSF& absPos) override;
 	bool GetMediaTrayStatus(bool& mediaPresent, bool& mediaChanged,
 	                        bool& trayOpen) override;
+	bool ReadSector(uint8_t* buffer, const bool raw, const uint32_t sector) override;
 	bool ReadSectors(PhysPt buffer, const bool raw, const uint32_t sector,
 	                 const uint16_t num) override;
 	bool ReadSectorsHost(void* buffer, bool raw, unsigned long sector,
 	                     unsigned long num) override;
 	bool LoadUnloadMedia(bool unload) override;
+	bool HasDataTrack() const override;
 	bool HasFullMscdexSupport() override
 	{
 		return true;
@@ -428,11 +441,13 @@ public:
 	                 unsigned char& index, TMSF& relPos, TMSF& absPos) override;
 	bool GetMediaTrayStatus(bool& mediaPresent, bool& mediaChanged,
 	                        bool& trayOpen) override;
+	bool ReadSector(uint8_t* buffer, const bool raw, const uint32_t sector) override;
 	bool ReadSectors(PhysPt buffer, const bool raw, const uint32_t sector,
 	                 const uint16_t num) override;
 	bool ReadSectorsHost(void* buffer, bool raw, unsigned long sector,
 	                     unsigned long num) override;
 	bool LoadUnloadMedia(bool unload) override;
+	bool HasDataTrack() const override;
 	bool HasFullMscdexSupport() override
 	{
 		return true;

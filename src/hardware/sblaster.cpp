@@ -215,7 +215,7 @@ struct SBInfo {
 		uint32_t count = 0;
 	} e2 = {};
 
-	mixer_channel_t chan = nullptr;
+	MixerChannelPtr chan = nullptr;
 };
 
 static SBInfo sb = {};
@@ -409,7 +409,7 @@ struct FilterConfig {
 	uint16_t zoh_rate_hz           = {};
 };
 
-static void set_filter(mixer_channel_t channel, const FilterConfig& config)
+static void set_filter(MixerChannelPtr channel, const FilterConfig& config)
 {
 	if (config.hpf_state == FilterState::On ||
 	    config.hpf_state == FilterState::ForcedOn) {
@@ -472,7 +472,7 @@ static std::optional<FilterType> determine_filter_type(const std::string& filter
 	return {};
 }
 
-static void configure_sb_filter_for_model(mixer_channel_t channel,
+static void configure_sb_filter_for_model(MixerChannelPtr channel,
                                           const std::string& filter_prefs,
                                           const bool filter_always_on,
                                           const SBType sb_type)
@@ -551,7 +551,7 @@ static void configure_sb_filter_for_model(mixer_channel_t channel,
 	set_filter(channel, config);
 }
 
-static void configure_sb_filter(mixer_channel_t channel,
+static void configure_sb_filter(MixerChannelPtr channel,
                                 const std::string& filter_prefs,
                                 const bool filter_always_on, const SBType sb_type)
 {
@@ -571,7 +571,7 @@ static void configure_sb_filter(mixer_channel_t channel,
 	}
 }
 
-static void configure_opl_filter_for_model(mixer_channel_t opl_channel,
+static void configure_opl_filter_for_model(MixerChannelPtr opl_channel,
                                            const std::string& filter_prefs,
                                            const SBType sb_type)
 {
@@ -632,7 +632,7 @@ static void configure_opl_filter_for_model(mixer_channel_t opl_channel,
 	set_filter(opl_channel, config);
 }
 
-static void configure_opl_filter(mixer_channel_t opl_channel,
+static void configure_opl_filter(MixerChannelPtr opl_channel,
                                  const std::string& filter_prefs, const SBType sb_type)
 {
 	assert(opl_channel);

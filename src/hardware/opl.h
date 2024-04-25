@@ -82,7 +82,7 @@ enum class Mode { Opl2, DualOpl2, Opl3, Opl3Gold };
 
 class OPL {
 public:
-	mixer_channel_t channel = {};
+	MixerChannelPtr channel = {};
 
 	RegisterCache cache = {};
 

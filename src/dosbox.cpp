@@ -577,10 +577,11 @@ void DOSBOX_Init()
 	PropMultiValRemain* pmulti_remain = nullptr;
 
 	// Specifies if and when a setting can be changed
-	constexpr auto always = Property::Changeable::Always;
+	constexpr auto always     = Property::Changeable::Always;
 	constexpr auto deprecated = Property::Changeable::Deprecated;
+	constexpr auto deprecated_but_allowed = Property::Changeable::DeprecatedButAllowed;
 	constexpr auto only_at_start = Property::Changeable::OnlyAtStart;
-	constexpr auto when_idle = Property::Changeable::WhenIdle;
+	constexpr auto when_idle     = Property::Changeable::WhenIdle;
 
 	constexpr auto changeable_at_runtime = true;
 
@@ -810,13 +811,15 @@ void DOSBOX_Init()
 	pstring->SetDeprecatedWithAlternateValue("pentium_slow", "pentium");
 
 	// Legacy `cycles` setting
-	pmulti_remain = secprop->AddMultiValRemain("cycles", deprecated, " ");
+	pmulti_remain = secprop->AddMultiValRemain("cycles",
+	                                           deprecated_but_allowed,
+	                                           " ");
 	pmulti_remain->Set_help(
 	        "Use 'cpu_cycles', 'cpu_cycles_protected', and 'cpu_throttle' to set the speed\n"
 	        "of the emulated CPU.");
 
 	pstring = pmulti_remain->GetSection()->Add_string("type", always, "auto");
-	pmulti_remain->SetValue("auto");
+	pmulti_remain->SetValue(" ");
 	pstring->Set_values({"auto", "fixed", "max", "%u"});
 
 	pmulti_remain->GetSection()->Add_string("parameters", always, "");

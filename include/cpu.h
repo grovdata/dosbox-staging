@@ -51,13 +51,20 @@ enum class ArchitectureType {
 	Mixed           = 0xff,
 };
 
-/* CPU Cycle Timing */
+// Current cycles values
 extern int CPU_Cycles;
 extern int CPU_CycleLeft;
+
 extern int CPU_CycleMax;
 extern int CPU_OldCycleMax;
 extern int CPU_CyclePercUsed;
 extern int CPU_CycleLimit;
+
+// Additional cycles config for 'modern mode' only
+extern int CPU_CycleMaxProtected;
+extern int CPU_CycleLimitReal;
+extern int CPU_CycleLimitProtected;
+
 extern int64_t CPU_IODelayRemoved;
 extern bool CPU_CycleAutoAdjust;
 

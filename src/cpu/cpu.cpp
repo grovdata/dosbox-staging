@@ -37,6 +37,7 @@
 #include "paging.h"
 #include "programs.h"
 #include "setup.h"
+#include "string_utils.h"
 #include "support.h"
 #include "video.h"
 
@@ -55,14 +56,26 @@ CPU_Regs cpu_regs = {};
 CPUBlock cpu      = {};
 Segments Segs     = {};
 
-int CPU_Cycles        = 0;
-int CPU_CycleLeft     = CpuCyclesRealModeDefault;
+// Current cycles values
+int CPU_Cycles    = 0;
+int CPU_CycleLeft = CpuCyclesRealModeDefault;
+
+// Cycles config for both 'legacy' and 'modern' modes
 int CPU_CycleMax      = CpuCyclesRealModeDefault;
 int CPU_OldCycleMax   = CpuCyclesRealModeDefault;
 int CPU_CyclePercUsed = 100;
 int CPU_CycleLimit    = -1;
-int CPU_CycleUp       = 0;
-int CPU_CycleDown     = 0;
+
+static bool legacy_cycles_mode = false;
+
+// Additional cycles config for 'modern mode' only
+int CPU_CycleMaxProtected   = CpuCyclesProtectedModeDefault;
+int CPU_CycleLimitReal      = -1;
+int CPU_CycleLimitProtected = -1;
+
+// Cycle up & down counts when
+int CPU_CycleUp   = 0;
+int CPU_CycleDown = 0;
 
 int64_t CPU_IODelayRemoved = 0;
 
@@ -2398,8 +2411,72 @@ public:
 
 	~Cpu() = default;
 
-	void ConfigureCycles(Section_prop* secprop)
+	void ConfigureCyclesModern(Section_prop* secprop,
+	                           const bool legacy_cycles_mode)
 	{
+		// Real mode
+		const std::string cpu_cycles = secprop->Get_string("cpu_cycles");
+
+		if (cpu_cycles == "max") {
+			CPU_CycleMax        = 0;
+			CPU_CyclePercUsed   = 100;
+			CPU_CycleAutoAdjust = true;
+			CPU_CycleLimit      = -1;
+
+		} else if (const auto maybe_int = parse_int(cpu_cycles)) {
+			CPU_CycleMax = *maybe_int;
+
+		} else {
+			LOG_WARNING("CPU: Invalid 'cpu_cycles' setting: '%s', using '%d'",
+			            cpu_cycles.c_str(),
+			            CpuCyclesRealModeDefault);
+
+			CPU_CycleMax = CpuCyclesRealModeDefault;
+		}
+
+		// Protected mode
+		const std::string cpu_cycles_protected = secprop->Get_string(
+		        "cpu_cycles_protected");
+
+		if (cpu_cycles_protected == "auto") {
+			// 'cpu_cycles' controls both real and protected mode
+			CPU_CycleMaxProtected = CPU_CycleMax;
+
+		} else if (cpu_cycles_protected == "max") {
+			CPU_CyclePercUsed = 100;
+
+		} else if (const auto maybe_int = parse_int(cpu_cycles)) {
+			if (cpu_cycles == "max") {
+				LOG_WARNING(
+				        "CPU: Invalid 'cpu_cycles_protected' setting: '%s', "
+				        "fixed cycles values are not allowed if 'cpu_cycles' "
+				        "is set to 'max'; using 'auto'",
+				        cpu_cycles.c_str());
+			} else {
+				// Different fixed cycles values for real and
+				// protected mode
+				CPU_CycleMaxProtected = *maybe_int;
+			}
+		} else {
+			LOG_WARNING("CPU: Invalid 'cpu_cycles_protected' setting: '%s', using '%d'",
+			            cpu_cycles.c_str(),
+			            CpuCyclesProtectedModeDefault);
+
+			CPU_CycleMaxProtected = CpuCyclesRealModeDefault;
+		}
+
+		// Throttling
+		const auto throttle_cpu = secprop->Get_bool("cpu_throttle");
+
+		if (throttle_cpu) {
+			//			CPU_CycleLimit =
+		}
+	}
+
+	void ConfigureCyclesLegacy(Section_prop* secprop)
+	{
+		LOG_DEBUG("ConfigureCyclesLegacy");
+
 		// Sets the value if the string in within the min and max values
 		auto set_if_in_range = [](const std::string& str,
 		                          int& value,
@@ -2418,9 +2495,15 @@ public:
 		};
 
 		PropMultiVal* p = secprop->GetMultiVal("cycles");
+//		LOG_TRACE("CPU: cycles = '%s'", secprop->Get_string("cycles").c_str());
+
 		const std::string type = p->GetSection()->Get_string("type");
 		std::string str;
 		CommandLine cmd("", p->GetSection()->Get_string("parameters"));
+		LOG_TRACE("CPU: type = '%s'", type.c_str());
+		LOG_TRACE("CPU: parameters = '%s'", p->GetSection()->Get_string("parameters").c_str());
+
+		LOG_DEBUG("%s", p->GetSection()->Get_string("parameters").c_str());
 
 		constexpr auto MinPercent = 0;
 		constexpr auto MaxPercent = 100;
@@ -2613,14 +2696,44 @@ public:
 	{
 		Section_prop* secprop = static_cast<Section_prop*>(sec);
 
+		{
+			PropMultiVal *p = secprop->GetMultiVal("cycles");
+			std::string type = p->GetSection()->Get_string("type");
+			std::string str;
+			CommandLine cmd("", p->GetSection()->Get_string("parameters"));
+			LOG_TRACE("CPU: type = '%s'", type.c_str());
+			LOG_TRACE("CPU: parameters = '%s'", p->GetSection()->Get_string("parameters").c_str());
+		}
+
 		// TODO needed?
 		// CPU_CycleLeft = 0;
 		CPU_Cycles            = 0;
 		CPU_AutoDetermineMode = {};
 
-		LOG_TRACE("%s", secprop->Get_string("cycles").c_str());
+		auto cycles_pref = secprop->Get_string("cycles");
+		trim(cycles_pref);
+		LOG_TRACE("CPU: cycles = '%s'", cycles_pref.c_str());
 
-		ConfigureCycles(secprop);
+		if (!cycles_pref.empty()) {
+			legacy_cycles_mode = true;
+
+			// Clear new CPU settings in legacy mode to avoid confusion
+			set_section_property_value("cpu", "cpu_cycles", "");
+			set_section_property_value("cpu", "cpu_cycles_protected", "");
+			set_section_property_value("cpu", "cpu_throttle", "false");
+		}
+
+		if (legacy_cycles_mode) {
+			ConfigureCyclesLegacy(secprop);
+
+			LOG_WARNING(
+			        "CPU: 'cycles' setting is deprecated but still accepted; "
+			        "please use the 'cpu_cycles', 'cpu_cycles_protected' and "
+			        "'cpu_throttle' settings instead as support will be "
+			        "removed in the future.");
+		} else {
+			ConfigureCyclesModern(secprop, legacy_cycles_mode);
+		}
 
 		const std::string cpu_core = secprop->Get_string("core");
 		const std::string cpu_type = secprop->Get_string("cputype");

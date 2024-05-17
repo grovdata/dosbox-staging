@@ -1631,7 +1631,7 @@ void CPU_SET_CRX(Bitu cr, Bitu value)
 				CPU_Cycles          = 0;
 				CPU_OldCycleMax     = CPU_CycleMax;
 
-				GFX_NotifyCyclesChanged(CPU_CyclePercUsed);
+				GFX_NotifyCyclesChanged();
 
 				if (!displayed_max_cycles_warning) {
 					LOG_WARNING(
@@ -2242,8 +2242,6 @@ static void CPU_CycleIncrease(bool pressed)
 		}
 		LOG_MSG("CPU speed: max %d percent.", CPU_CyclePercUsed);
 
-		GFX_NotifyCyclesChanged(CPU_CyclePercUsed);
-
 	} else {
 		auto old_cycles = CPU_CycleMax;
 		if (CPU_CycleUp < 100) {
@@ -2266,8 +2264,9 @@ static void CPU_CycleIncrease(bool pressed)
 		} else {
 			LOG_MSG("CPU speed: fixed %d cycles.", CPU_CycleMax);
 		}
-		GFX_NotifyCyclesChanged(CPU_CycleMax);
 	}
+
+	GFX_NotifyCyclesChanged();
 }
 
 static void CPU_CycleDecrease(bool pressed)
@@ -2291,8 +2290,6 @@ static void CPU_CycleDecrease(bool pressed)
 			LOG_MSG("CPU speed: max %d percent.", CPU_CyclePercUsed);
 		}
 
-		GFX_NotifyCyclesChanged(CPU_CyclePercUsed);
-
 	} else {
 		if (CPU_CycleDown < 100) {
 			CPU_CycleMax = static_cast<int>(
@@ -2310,9 +2307,9 @@ static void CPU_CycleDecrease(bool pressed)
 		}
 
 		LOG_MSG("CPU speed: fixed %d cycles.", CPU_CycleMax);
-
-		GFX_NotifyCyclesChanged(CPU_CycleMax);
 	}
+
+	GFX_NotifyCyclesChanged();
 }
 
 void CPU_Reset_AutoAdjust(void)
@@ -2321,6 +2318,22 @@ void CPU_Reset_AutoAdjust(void)
 
 	DOSBOX_SetTicksDone(0);
 	DOSBOX_SetTicksScheduled(0);
+}
+
+std::string CPU_GetCyclesConfigAsString()
+{
+	if (CPU_CycleAutoAdjust) {
+		if (CPU_CycleLimit > 0) {
+			return format_str("max %d%% limit %d",
+			                  CPU_CyclePercUsed,
+			                  CPU_CycleLimit);
+		} else {
+			return format_str("max %d%%", CPU_CyclePercUsed);
+		}
+
+	} else {
+		return format_str("%d", CPU_CycleMax);
+	}
 }
 
 class Cpu final {
@@ -2754,11 +2767,7 @@ public:
 			CPU_CycleDown = 20;
 		}
 
-		if (CPU_CycleAutoAdjust) {
-			GFX_NotifyCyclesChanged(CPU_CyclePercUsed);
-		} else {
-			GFX_NotifyCyclesChanged(CPU_CycleMax);
-		}
+		GFX_NotifyCyclesChanged();
 
 		return true;
 	}

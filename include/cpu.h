@@ -80,6 +80,8 @@ extern ArchitectureType CPU_ArchitectureType;
 
 extern Bitu CPU_PrefetchQueueSize;
 
+std::string CPU_GetCyclesConfigAsString();
+
 // A CPU handler
 typedef Bits(CPU_Decoder)(void);
 

@@ -612,6 +612,13 @@ enum class FileSharingMode
 	DenyNone
 };
 
+union FileFlagBits
+{
+	uint8_t data = 0;
+	bit_view<0, 3> access_mode;
+	bit_view<4, 3> sharing_mode;
+};
+
 struct FileAccessMode
 {
 	bool read = false;
@@ -628,10 +635,9 @@ static FileOpenFlags parse_file_flags(const uint8_t flags)
 {
 	FileOpenFlags ret = {};
 
-	// Bottom 3 bits
-	const uint8_t access_bits = flags & 0b111;
+	const FileFlagBits flag_bits = {flags};
 
-	switch (access_bits) {
+	switch (flag_bits.access_mode) {
 		case OPEN_READ:
 		case OPEN_READ_NO_MOD:
 			ret.access.read = true;
@@ -652,10 +658,7 @@ static FileOpenFlags parse_file_flags(const uint8_t flags)
 			ret.access.write = true;
 	}
 
-	// Extract bits 4-6
-	const uint8_t sharing_bits = (flags & 0b1110000) >> 4;
-
-	switch (sharing_bits) {
+	switch (flag_bits.sharing_mode) {
 		case 0b000:
 			ret.sharing = FileSharingMode::Compatibility;
 			break;

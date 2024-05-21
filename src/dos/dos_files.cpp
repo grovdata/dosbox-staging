@@ -603,6 +603,132 @@ bool DOS_CreateFile(const char* name, FatAttributeFlags attributes,
 	}
 }
 
+enum class FileSharingMode
+{
+	Compatibility,
+	DenyReadWrite,
+	DenyWrite,
+	DenyRead,
+	DenyNone
+};
+
+struct FileAccessMode
+{
+	bool read = false;
+	bool write = false;
+};
+
+struct FileOpenFlags
+{
+	FileSharingMode sharing = FileSharingMode::Compatibility;
+	FileAccessMode access = {};
+};
+
+static FileOpenFlags parse_file_flags(const uint8_t flags)
+{
+	FileOpenFlags ret = {};
+
+	// Bottom 3 bits
+	const uint8_t access_bits = flags & 0b111;
+
+	switch (access_bits) {
+		case OPEN_READ:
+		case OPEN_READ_NO_MOD:
+			ret.access.read = true;
+			ret.access.write = false;
+			break;
+		case OPEN_WRITE:
+			ret.access.read = false;
+			ret.access.write = true;
+			break;
+		case OPEN_READWRITE:
+			ret.access.read = true;
+			ret.access.write = true;
+			break;
+		// Assume read/write access for the purpose of file locking checks
+		// This should throw an error when the file actually tries to open
+		default:
+			ret.access.read = true;
+			ret.access.write = true;
+	}
+
+	// Extract bits 4-6
+	const uint8_t sharing_bits = (flags & 0b1110000) >> 4;
+
+	switch (sharing_bits) {
+		case 0b000:
+			ret.sharing = FileSharingMode::Compatibility;
+			break;
+		case 0b001:
+			ret.sharing = FileSharingMode::DenyReadWrite;
+			break;
+		case 0b010:
+			ret.sharing = FileSharingMode::DenyWrite;
+			break;
+		case 0b011:
+			ret.sharing = FileSharingMode::DenyRead;
+			break;
+		case 0b100:
+			ret.sharing = FileSharingMode::DenyNone;
+			break;
+		// If we somehow get something invalid, assume compatibiliy mode.
+		default:
+			ret.sharing = FileSharingMode::Compatibility;
+	}
+
+	return ret;
+}
+
+static bool single_directional_sharing_check(const FileOpenFlags& new_file, const FileOpenFlags& existing_file)
+{
+	switch (new_file.sharing) {
+		case FileSharingMode::Compatibility:
+			return existing_file.sharing == FileSharingMode::Compatibility;
+		case FileSharingMode::DenyReadWrite:
+			return false;
+		case FileSharingMode::DenyWrite:
+			if (existing_file.sharing == FileSharingMode::Compatibility) {
+				return false;
+			} else {
+				return !existing_file.access.write;
+			}
+		case FileSharingMode::DenyRead:
+			if (existing_file.sharing == FileSharingMode::Compatibility) {
+				return false;
+			} else {
+				return !existing_file.access.read;
+			}
+		case FileSharingMode::DenyNone:
+			return existing_file.sharing != FileSharingMode::Compatibility;
+	}
+	// GCC 12 throws a compile error if we don't have a return statement here
+	assertm(false, "Invalid enum value");
+	return false;
+}
+
+static bool file_modes_are_compatible(const FileOpenFlags& new_file, const FileOpenFlags& existing_file)
+{
+	// Needs a two-way check
+	// Run this function twice with arguments reversed the second time
+	return single_directional_sharing_check(new_file, existing_file) && single_directional_sharing_check(existing_file, new_file);
+}
+
+static bool file_is_locked(const char *file_name, const uint8_t drive, const uint8_t flags)
+{
+	const FileOpenFlags new_file = parse_file_flags(flags);
+
+	for (int i = 0; i < DOS_FILES; ++i) {
+		if (Files[i] && Files[i]->GetDrive() == drive && Files[i]->IsName(file_name)) {
+			const FileOpenFlags existing_file = parse_file_flags(Files[i]->flags);
+			if (!file_modes_are_compatible(new_file, existing_file)) {
+				return true;
+			}
+		}
+	}
+
+	return false;
+}
+
 bool DOS_OpenFile(const char* name, uint8_t flags, uint16_t* entry, bool fcb)
 {
 	/* First check for devices */
@@ -652,6 +778,10 @@ bool DOS_OpenFile(const char* name, uint8_t flags, uint16_t* entry, bool fcb)
 	if (device) {
 		Files[handle]=new DOS_Device(*Devices[devnum]);
 	} else {
+		if (file_is_locked(fullname, drive, flags)) {
+			DOS_SetError(DOSERR_ACCESS_DENIED);
+			return false;
+		}
 		const auto old_errorcode = dos.errorcode;
 		dos.errorcode = 0;
 		exists = Drives.at(drive)->FileOpen(&Files[handle], fullname, flags);
